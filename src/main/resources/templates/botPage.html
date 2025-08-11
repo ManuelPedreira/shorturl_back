@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org/">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title th:text="${url.title}">URL Title</title>
+
+    <!-- Open Graph -->
+    <meta property="og:title" th:content="${url.title}" />
+    <meta property="og:type" content="website" />
+    <meta property="og:url" th:content="${url.originalUrl}" />
+    <meta property="og:image" th:if="${url.imageUrl}" th:content="${url.imageUrl}" />
+    <meta property="og:description" th:if="${url.description}" th:content="${url.description}" />
+
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" th:content="${url.title}" />
+    <meta name="twitter:description" th:if="${url.description}" th:content="${url.description}" />
+    <meta name="twitter:image" th:if="${url.imageUrl}" th:content="${url.imageUrl}" />
+  </head>
+  <body>
+    <main>
+      <h1 th:text="${url.title}">URL Title</h1>
+      <p th:if="${url.description}" th:text="${url.description}">Description</p>
+      <div th:if="${url.imageUrl}">
+        <img th:src="${url.imageUrl}" alt="Imagen de la URL" style="max-width: 400px" />
+      </div>
+      <div th:if="${url.imageUrl == null}">
+        <span>No image available</span>
+      </div>
+      <p>
+        Link:
+        <a th:href="${url.originalUrl}" th:text="${url.originalUrl}" target="_blank"></a>
+      </p>
+    </main>
+  </body>
+</html>

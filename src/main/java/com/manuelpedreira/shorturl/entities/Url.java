@@ -27,6 +27,8 @@ public class Url {
 
   private String title;
 
+  private String description;
+
   private String imageUrl;
 
   @Column(columnDefinition = "TIMESTAMP DEFAULT CURRENT_TIMESTAMP")
@@ -104,6 +106,13 @@ public class Url {
   public void setUser(User user) {
     this.user = user;
   }
-  
+
+  public String getDescription() {
+    return description;
+  }
+
+  public void setDescription(String description) {
+    this.description = description;
+  }
 
 }
