@@ -1,73 +1,80 @@
 package com.manuelpedreira.shorturl.controllers;
 
-import java.util.Optional;
-import java.util.regex.Pattern;
+import java.io.IOException;
 
+import org.jsoup.Jsoup;
+import org.jsoup.nodes.Document;
+import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
-import org.springframework.stereotype.Controller;
-import org.springframework.ui.Model;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.servlet.ModelAndView;
-import org.springframework.web.servlet.view.RedirectView;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.RestController;
 
+import com.manuelpedreira.shorturl.dto.UrlRequestDTO;
 import com.manuelpedreira.shorturl.entities.Url;
 import com.manuelpedreira.shorturl.services.UrlService;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 
-import jakarta.servlet.http.HttpServletRequest;
-import org.slf4j.Logger;
-
-@Controller
+@RestController
 public class UrlController {
 
-  private static final Logger logger = LoggerFactory.getLogger(UrlController.class);
+  private static final Logger logger = LoggerFactory.getLogger(UrlGetController.class);
 
   @Autowired
   private UrlService urlService;
 
-  @Value("${custom.bot-agent}")
-  private String BOT_AGENT;
+  @PostMapping("/api")
+  public ResponseEntity<?> postUrl(@RequestBody UrlRequestDTO urlRequest) {
 
-  public boolean isBotAgent(String userAgent) {
-    Pattern comparer = Pattern.compile("(" + BOT_AGENT + ")", Pattern.CASE_INSENSITIVE);
-    return userAgent != null && comparer.matcher(userAgent).find();
+    try {
+      return ResponseEntity.status(HttpStatus.CREATED).body(getUrlDataWithJsoup(urlRequest.getUrl()));
+
+    } catch (Exception e) {
+      logger.error("Error extracting metadata from {}: {}", urlRequest.getUrl(), e.getMessage());
+      return ResponseEntity.notFound().build();
+    }
   }
 
-  public String getClientIp(HttpServletRequest req) {
-    String xff = req.getHeader("X-Forwarded-For");
-    if (xff != null && !xff.isBlank()) {
-      return xff.split(",")[0].trim();
-    }
-    return req.getRemoteAddr();
+  private Url getUrlDataWithJsoup(String urlPage) throws IOException {
+
+    Url url = new Url();
+    url.setOriginalUrl(urlPage);
+
+    Document doc = Jsoup.connect(urlPage).get();
+
+    url.setTitle(doc.title());
+    if (url.getTitle().isEmpty())
+      url.setTitle(getFirstJsoupSelect(doc,
+          "meta[property=og:title]",
+          "meta[name=twitter:title]"));
+
+    url.setDescription(getFirstJsoupSelect(doc,
+        "meta[name=description]",
+        "meta[property=og:description]",
+        "meta[name=twitter:description]"));
+
+    url.setImageUrl(getFirstJsoupSelect(doc,
+        "meta[property=og:image]",
+        "meta[property=og:image:url]",
+        "meta[name=twitter:image]",
+        "meta[name=image]"));
+
+    return url;
   }
 
-  @GetMapping("/{shortCode}")
-  // http://localhost:8080/abcd123
-  public ModelAndView getURL(@PathVariable String shortCode, HttpServletRequest req, Model model) {
+  private String getFirstJsoupSelect(Document doc, String... metas) {
+    Integer count = 0;
 
-    Optional<Url> urlOptional = urlService.findByShortCode(shortCode);
-
-    if (urlOptional.isEmpty())
-      return new ModelAndView("error/404");
-
-    Url url = urlOptional.get();
-    String userAgent = req.getHeader("User-Agent");
-    String ip = getClientIp(req);
-
-    logger.info("User Agent: {}", userAgent);
-    logger.info("Is Bot: {}", isBotAgent(userAgent));
-    logger.info("IP: {}", ip);
-
-    if (isBotAgent(userAgent)) {
-      model.addAttribute("url", url);
-      return new ModelAndView("botPage");
-    } else {
-      RedirectView redirectView = new RedirectView(url.getOriginalUrl(), true);
-      redirectView.setStatusCode(HttpStatus.TEMPORARY_REDIRECT);
-      return new ModelAndView(redirectView);
+    for (String meta : metas) {
+      String data = doc.select(meta).attr("content");
+      count++;
+      if (data != null && !data.isEmpty()) {
+        logger.info("found at try " + count + " ! ->" + meta + " -> " + data);
+        return data;
+      }
     }
+    return "";
   }
 }

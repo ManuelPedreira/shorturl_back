@@ -15,7 +15,7 @@ public class SecurityConfig {
         .csrf(csrf -> csrf.disable())
         .authorizeHttpRequests(auth -> auth
             .requestMatchers(HttpMethod.GET, "/{shortCode:[a-zA-Z0-9]{7}}").permitAll()
-            .requestMatchers(HttpMethod.POST, "/api/links").permitAll()
+            .requestMatchers(HttpMethod.POST, "/api").permitAll()
             .anyRequest().authenticated());
         //.oauth2Login(oauth2 -> oauth2.defaultSuccessUrl("/dashboard", true))
         //.oauth2ResourceServer(oauth2 -> oauth2.jwt(Customizer.withDefaults()));
