@@ -1,7 +1,10 @@
 package com.manuelpedreira.shorturl.entities;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
+import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
@@ -9,6 +12,7 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
+import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
 
 @Entity
@@ -27,6 +31,7 @@ public class Url {
 
   private String title;
 
+  @Column(columnDefinition = "TEXT")
   private String description;
 
   private String imageUrl;
@@ -40,7 +45,11 @@ public class Url {
   @JoinColumn(name = "user_id")
   private User user;
 
+  @OneToMany(mappedBy = "url", cascade = CascadeType.ALL, orphanRemoval = true)
+  private List<Telemetry> telemetries;
+
   public Url() {
+    telemetries = new ArrayList<Telemetry>();
   }
 
   public Long getId() {
@@ -113,6 +122,14 @@ public class Url {
 
   public void setDescription(String description) {
     this.description = description;
+  }
+
+  public List<Telemetry> getTelemetries() {
+    return telemetries;
+  }
+
+  public void setTelemetries(List<Telemetry> telemetries) {
+    this.telemetries = telemetries;
   }
 
 }
