@@ -124,6 +124,12 @@ public class Url {
     this.description = description;
   }
 
+  public Url addTelemetry(Telemetry telemetry) {
+    this.telemetries.add(telemetry);
+    telemetry.setUrl(this);
+    return this;
+  }
+
   public List<Telemetry> getTelemetries() {
     return telemetries;
   }

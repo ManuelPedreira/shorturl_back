@@ -10,6 +10,7 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
+import jakarta.persistence.Transient;
 
 @Entity
 @Table(name = "telemetry")
@@ -33,7 +34,18 @@ public class Telemetry {
   @Column(length = 2)
   private String countryCode;
 
+  @Transient
+  private Boolean isBot;
+
   public Telemetry() {
+  }
+
+  public Telemetry(String ipAddress, String userAgent, String countryCode) {
+    this();
+    this.ipAddress = ipAddress;
+    this.userAgent = userAgent;
+    this.countryCode = countryCode;
+    eventAt = java.time.LocalDateTime.now();
   }
 
   public Long getId() {
@@ -82,6 +94,14 @@ public class Telemetry {
 
   public void setCountryCode(String countryCode) {
     this.countryCode = countryCode;
+  }
+
+  public Boolean isBot() {
+    return isBot;
+  }
+
+  public void setIsBot(Boolean isBot) {
+    this.isBot = isBot;
   }
 
 }
