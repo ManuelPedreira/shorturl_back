@@ -14,6 +14,7 @@ import org.springframework.web.servlet.view.RedirectView;
 import com.manuelpedreira.shorturl.entities.Telemetry;
 import com.manuelpedreira.shorturl.entities.Url;
 import com.manuelpedreira.shorturl.services.TelemetryBuilder;
+import com.manuelpedreira.shorturl.services.TelemetryService;
 import com.manuelpedreira.shorturl.services.UrlService;
 
 import jakarta.servlet.http.HttpServletRequest;
@@ -23,6 +24,9 @@ public class UrlGetController {
 
   @Autowired
   private UrlService urlService;
+
+  @Autowired
+  private TelemetryService telemetryService;
 
   @Autowired
   private TelemetryBuilder telemetryBuilder;
@@ -42,9 +46,9 @@ public class UrlGetController {
     if (telemetry.isBot()) {
       model.addAttribute("url", url);
       return new ModelAndView("botPage");
+      
     } else {
-      url.addTelemetry(telemetry);
-      urlService.update(url);
+      telemetryService.registerVisit(telemetry, url);
 
       RedirectView redirectView = new RedirectView(url.getOriginalUrl(), true);
       redirectView.setStatusCode(HttpStatus.TEMPORARY_REDIRECT);

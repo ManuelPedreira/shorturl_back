@@ -3,7 +3,6 @@ package com.manuelpedreira.shorturl.services;
 import java.io.IOException;
 import java.util.Optional;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -15,17 +14,19 @@ import com.manuelpedreira.shorturl.repositories.UrlRepository;
 @Service
 public class UrlServiceImp implements UrlService {
 
-  @Autowired
   private UrlRepository urlRepository;
-
-  @Autowired
   private MetadataExtractorService metadataExtractorService;
-
-  @Autowired
   private ShortCodeGeneratorService codeGeneratorService;
 
   @Value("${custom.url.default.expiration.months}")
   private int defaultExpirationMonths;
+
+  public UrlServiceImp(UrlRepository urlRepository, MetadataExtractorService metadataExtractorService,
+      ShortCodeGeneratorService codeGeneratorService) {
+    this.urlRepository = urlRepository;
+    this.metadataExtractorService = metadataExtractorService;
+    this.codeGeneratorService = codeGeneratorService;
+  }
 
   @Override
   @Transactional(readOnly = true)
@@ -45,7 +46,8 @@ public class UrlServiceImp implements UrlService {
     metadataExtractorService.enrichUrlWithMetaDataJsoup(url);
 
     url.setCreatedAt(java.time.LocalDateTime.now());
-    url.setExpirationDate(java.time.LocalDateTime.now().plus(defaultExpirationMonths, java.time.temporal.ChronoUnit.MONTHS));
+    url.setExpirationDate(
+        java.time.LocalDateTime.now().plus(defaultExpirationMonths, java.time.temporal.ChronoUnit.MONTHS));
 
     return urlRepository.save(url);
   }
@@ -55,5 +57,4 @@ public class UrlServiceImp implements UrlService {
   public Url update(Url url) {
     return urlRepository.save(url);
   }
-
 }

@@ -8,9 +8,9 @@ import com.manuelpedreira.shorturl.entities.User;
 
 public interface UrlService {
 
-  Optional<Url> findByShortCode(String shortCode);
+  public Optional<Url> findByShortCode(String shortCode);
 
-  Url create(String originalUrl, User user)  throws IOException ;
+  public Url create(String originalUrl, User user) throws IOException;
 
-  Url update(Url newUrl);
+  public Url update(Url newUrl);
 }
