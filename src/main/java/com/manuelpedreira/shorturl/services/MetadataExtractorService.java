@@ -15,26 +15,33 @@ public class MetadataExtractorService {
 
   private static final Logger logger = LoggerFactory.getLogger(MetadataExtractorService.class);
 
-  public Url enrichUrlWithMetaDataJsoup(Url url) throws IOException {
+  public Url enrichUrlWithMetaDataJsoup(Url url) {
 
-    Document doc = Jsoup.connect(url.getOriginalUrl()).get();
+    Document doc;
+    try {
+      doc = Jsoup.connect(url.getOriginalUrl()).get();
 
-    url.setTitle(doc.title());
-    if (url.getTitle().isEmpty())
-      url.setTitle(getFirstJsoupSelect(doc,
-          "meta[property=og:title]",
-          "meta[name=twitter:title]"));
+      url.setTitle(doc.title());
+      if (url.getTitle().isEmpty())
+        url.setTitle(getFirstJsoupSelect(doc,
+            "meta[property=og:title]",
+            "meta[name=twitter:title]"));
 
-    url.setDescription(getFirstJsoupSelect(doc,
-        "meta[name=description]",
-        "meta[property=og:description]",
-        "meta[name=twitter:description]"));
+      url.setDescription(getFirstJsoupSelect(doc,
+          "meta[name=description]",
+          "meta[property=og:description]",
+          "meta[name=twitter:description]"));
 
-    url.setImageUrl(getFirstJsoupSelect(doc,
-        "meta[property=og:image]",
-        "meta[property=og:image:url]",
-        "meta[name=twitter:image]",
-        "meta[name=image]"));
+      url.setImageUrl(getFirstJsoupSelect(doc,
+          "meta[property=og:image]",
+          "meta[property=og:image:url]",
+          "meta[name=twitter:image]",
+          "meta[name=image]"));
+
+    } catch (IOException e) {
+      url.setTitle(url.getOriginalUrl());
+      logger.error("Failed to fetch metadata for URL: " + url.getOriginalUrl(), e);
+    }
 
     return url;
   }

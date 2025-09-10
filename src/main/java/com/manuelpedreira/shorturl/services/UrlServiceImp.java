@@ -1,6 +1,5 @@
 package com.manuelpedreira.shorturl.services;
 
-import java.io.IOException;
 import java.util.Optional;
 
 import org.springframework.beans.factory.annotation.Value;
@@ -36,7 +35,7 @@ public class UrlServiceImp implements UrlService {
 
   @Override
   @Transactional
-  public Url create(String originalUrl, User user) throws IOException {
+  public Url create(String originalUrl, User user) {
 
     Url url = new Url();
 
@@ -56,5 +55,11 @@ public class UrlServiceImp implements UrlService {
   @Transactional
   public Url update(Url url) {
     return urlRepository.save(url);
+  }
+
+  @Override
+  @Transactional
+  public void delete(Url url) {
+    urlRepository.delete(url);
   }
 }

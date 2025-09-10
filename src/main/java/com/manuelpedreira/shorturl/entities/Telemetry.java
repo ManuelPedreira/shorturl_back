@@ -104,4 +104,10 @@ public class Telemetry {
     this.isBot = isBot;
   }
 
+  @Override
+  public String toString() {
+    return "Telemetry [id=" + id + ", eventAt=" + eventAt + ", ipAddress=" + ipAddress + ", userAgent=" + userAgent
+        + ", countryCode=" + countryCode + "]";
+  }
+
 }

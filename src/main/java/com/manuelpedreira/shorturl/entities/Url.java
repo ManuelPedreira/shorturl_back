@@ -138,4 +138,11 @@ public class Url {
     this.telemetries = telemetries;
   }
 
+  @Override
+  public String toString() {
+    return "Url [id=" + id + ", shortCode=" + shortCode + ", originalUrl=" + originalUrl + ", title=" + title
+        + ", description=" + description + ", imageUrl=" + imageUrl + ", createdAt=" + createdAt + ", expirationDate="
+        + expirationDate + ", user=" + user + ", telemetries=" + telemetries + "]";
+  }
+
 }

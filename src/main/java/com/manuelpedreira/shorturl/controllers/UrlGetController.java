@@ -31,7 +31,7 @@ public class UrlGetController {
   @Autowired
   private TelemetryBuilder telemetryBuilder;
 
-  @GetMapping("/{shortCode}")
+  @GetMapping("/{shortCode:[a-zA-Z0-9]{7}}")
   // http://localhost:8080/abcd123
   public ModelAndView getURL(@PathVariable String shortCode, HttpServletRequest req, Model model) {
 
@@ -46,9 +46,9 @@ public class UrlGetController {
     if (telemetry.isBot()) {
       model.addAttribute("url", url);
       return new ModelAndView("botPage");
-      
+
     } else {
-      telemetryService.registerVisit(telemetry, url);
+      telemetryService.registerAsyncVisit(telemetry, url);
 
       RedirectView redirectView = new RedirectView(url.getOriginalUrl(), true);
       redirectView.setStatusCode(HttpStatus.TEMPORARY_REDIRECT);
