@@ -50,7 +50,7 @@ public class UrlGetController {
     } else {
       telemetryService.registerAsyncVisit(telemetry, url);
 
-      RedirectView redirectView = new RedirectView(url.getOriginalUrl(), true);
+      RedirectView redirectView = new RedirectView(url.getOriginalUrl(), false);
       redirectView.setStatusCode(HttpStatus.TEMPORARY_REDIRECT);
       return new ModelAndView(redirectView);
     }

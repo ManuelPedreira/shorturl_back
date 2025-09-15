@@ -1,9 +1,12 @@
 package com.manuelpedreira.shorturl.entities;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
+
+import org.hibernate.annotations.CreationTimestamp;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
@@ -19,12 +22,12 @@ public class Telemetry {
   @GeneratedValue(strategy = GenerationType.IDENTITY)
   private Long id;
 
-  @ManyToOne
+  @ManyToOne(fetch = FetchType.LAZY)
   @JoinColumn(name = "url_id")
   private Url url;
 
-  @Column(columnDefinition = "TIMESTAMP DEFAULT CURRENT_TIMESTAMP")
-  private LocalDateTime eventAt;
+  @CreationTimestamp
+  private Instant eventAt;
 
   @Column(length = 45)
   private String ipAddress;
@@ -45,7 +48,6 @@ public class Telemetry {
     this.ipAddress = ipAddress;
     this.userAgent = userAgent;
     this.countryCode = countryCode;
-    eventAt = java.time.LocalDateTime.now();
   }
 
   public Long getId() {
@@ -64,11 +66,11 @@ public class Telemetry {
     this.url = url;
   }
 
-  public LocalDateTime getEventAt() {
+  public Instant getEventAt() {
     return eventAt;
   }
 
-  public void setEventAt(LocalDateTime eventAt) {
+  public void setEventAt(Instant eventAt) {
     this.eventAt = eventAt;
   }
 

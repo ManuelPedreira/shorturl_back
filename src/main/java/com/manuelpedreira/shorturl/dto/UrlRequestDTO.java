@@ -7,7 +7,8 @@ import jakarta.validation.constraints.NotBlank;
 public class UrlRequestDTO {
 
   @NotBlank
-  @URL(protocol = "http", message = "URL must include http or https")
+  @URL(regexp = "https?://.*", flags = {
+      jakarta.validation.constraints.Pattern.Flag.CASE_INSENSITIVE }, message = "URL must start with http:// or https://")
   private String url;
 
   public UrlRequestDTO() {

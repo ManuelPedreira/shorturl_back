@@ -6,20 +6,39 @@ import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
 import com.manuelpedreira.shorturl.entities.Url;
+import com.manuelpedreira.shorturl.repositories.UrlRepository;
+
+import jakarta.transaction.Transactional;
 
 @Service
 public class MetadataExtractorService {
 
   private static final Logger logger = LoggerFactory.getLogger(MetadataExtractorService.class);
 
+  @Autowired
+  UrlRepository urlRepository;
+
+  @Async("metadataExecutor")
+  @Transactional
+  public void enrichUrlAndSaveAsync(Long urlId, String originalUrl) {
+    Url url = new Url();
+    url.setOriginalUrl(originalUrl);
+    enrichUrlWithMetaDataJsoup(url);
+    urlRepository.saveMetaData(urlId, url.getTitle(), url.getDescription(), url.getImageUrl());
+  }
+
   public Url enrichUrlWithMetaDataJsoup(Url url) {
 
     Document doc;
     try {
-      doc = Jsoup.connect(url.getOriginalUrl()).get();
+      doc = Jsoup.connect(url.getOriginalUrl())
+          .timeout(5000)
+          .get();
 
       url.setTitle(doc.title());
       if (url.getTitle().isEmpty())

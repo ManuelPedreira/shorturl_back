@@ -9,6 +9,7 @@ import org.springframework.stereotype.Service;
 
 import com.manuelpedreira.shorturl.entities.Telemetry;
 
+import jakarta.annotation.PostConstruct;
 import jakarta.servlet.http.HttpServletRequest;
 
 @Service
@@ -16,6 +17,8 @@ public class TelemetryBuilder {
 
   @Value("${custom.bot-agent}")
   private String BOT_AGENT;
+
+  private Pattern comparer;
 
   private static final Logger logger = LoggerFactory.getLogger(TelemetryBuilder.class);
 
@@ -30,8 +33,12 @@ public class TelemetryBuilder {
     return telemetry;
   }
 
+  @PostConstruct
+  public void crateComparerPattern() {
+    comparer = Pattern.compile("(" + BOT_AGENT + ")", Pattern.CASE_INSENSITIVE);
+  }
+
   private Boolean isBot(Telemetry telemetry) {
-    Pattern comparer = Pattern.compile("(" + BOT_AGENT + ")", Pattern.CASE_INSENSITIVE);
     return telemetry.getUserAgent() != null && comparer.matcher(telemetry.getUserAgent()).find();
   }
 

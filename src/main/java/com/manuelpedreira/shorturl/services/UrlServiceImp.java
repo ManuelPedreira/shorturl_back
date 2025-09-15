@@ -1,8 +1,13 @@
 package com.manuelpedreira.shorturl.services;
 
+import java.time.Instant;
+import java.time.ZoneOffset;
 import java.util.Optional;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -16,6 +21,10 @@ public class UrlServiceImp implements UrlService {
   private UrlRepository urlRepository;
   private MetadataExtractorService metadataExtractorService;
   private ShortCodeGeneratorService codeGeneratorService;
+
+  final int MAX_ATTEMPTS = 6;
+
+  private static final Logger logger = LoggerFactory.getLogger(UrlServiceImp.class);
 
   @Value("${custom.url.default.expiration.months}")
   private int defaultExpirationMonths;
@@ -38,17 +47,29 @@ public class UrlServiceImp implements UrlService {
   public Url create(String originalUrl, User user) {
 
     Url url = new Url();
-
     url.setOriginalUrl(originalUrl);
-    url.setShortCode(codeGeneratorService.generarShortCode());
+    url.setExpirationDate(java.time.ZonedDateTime.now(ZoneOffset.UTC)
+        .plusMonths(defaultExpirationMonths)
+        .toInstant());
 
-    metadataExtractorService.enrichUrlWithMetaDataJsoup(url);
+    for (int saveAttempt = 1; saveAttempt <= MAX_ATTEMPTS; saveAttempt++) {
+      try {
+        url.setShortCode(codeGeneratorService.generarShortCode());
+        Url urlCreated = urlRepository.save(url);
 
-    url.setCreatedAt(java.time.LocalDateTime.now());
-    url.setExpirationDate(
-        java.time.LocalDateTime.now().plus(defaultExpirationMonths, java.time.temporal.ChronoUnit.MONTHS));
+        metadataExtractorService.enrichUrlAndSaveAsync(urlCreated.getId(), originalUrl);
 
-    return urlRepository.save(url);
+        return urlCreated;
+
+      } catch (DataIntegrityViolationException dive) {
+        logger.warn("ShortCode collision (attempt {}), regenerating...", saveAttempt);
+        if (saveAttempt == MAX_ATTEMPTS) {
+          logger.error("Max attempts reached generating unique shortCode");
+          throw dive;
+        }
+      }
+    }
+    throw new IllegalStateException("Unable to create unique short code after retries");
   }
 
   @Override

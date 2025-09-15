@@ -30,7 +30,7 @@ public class TelemetryServiceImp implements TelemetryService {
 
   @Override
   @Transactional
-  @Async
+  @Async("telemetryExecutor")
   public void registerAsyncVisit(Telemetry telemetry, Url url) {
     Url attached = urlRepository.getReferenceById(url.getId());
     telemetry.setUrl(attached);

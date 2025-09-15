@@ -1,12 +1,15 @@
 package com.manuelpedreira.shorturl.entities;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
+
+import org.hibernate.annotations.CreationTimestamp;
 
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
@@ -36,12 +39,12 @@ public class Url {
 
   private String imageUrl;
 
-  @Column(columnDefinition = "TIMESTAMP DEFAULT CURRENT_TIMESTAMP")
-  private LocalDateTime createdAt;
+  @CreationTimestamp
+  private Instant createdAt;
 
-  private LocalDateTime expirationDate;
+  private Instant expirationDate;
 
-  @ManyToOne
+  @ManyToOne(fetch = FetchType.LAZY)
   @JoinColumn(name = "user_id")
   private User user;
 
@@ -92,19 +95,19 @@ public class Url {
     this.imageUrl = imageUrl;
   }
 
-  public LocalDateTime getExpirationDate() {
+  public Instant getExpirationDate() {
     return expirationDate;
   }
 
-  public void setExpirationDate(LocalDateTime expirationDate) {
+  public void setExpirationDate(Instant expirationDate) {
     this.expirationDate = expirationDate;
   }
 
-  public LocalDateTime getCreatedAt() {
+  public Instant getCreatedAt() {
     return createdAt;
   }
 
-  public void setCreatedAt(LocalDateTime createdAt) {
+  public void setCreatedAt(Instant createdAt) {
     this.createdAt = createdAt;
   }
 
@@ -142,7 +145,7 @@ public class Url {
   public String toString() {
     return "Url [id=" + id + ", shortCode=" + shortCode + ", originalUrl=" + originalUrl + ", title=" + title
         + ", description=" + description + ", imageUrl=" + imageUrl + ", createdAt=" + createdAt + ", expirationDate="
-        + expirationDate + ", user=" + user + ", telemetries=" + telemetries + "]";
+        + expirationDate + ", user=" + user +" ]";
   }
 
 }
