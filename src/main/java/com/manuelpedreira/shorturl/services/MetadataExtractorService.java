@@ -66,13 +66,10 @@ public class MetadataExtractorService {
   }
 
   private String getFirstJsoupSelect(Document doc, String... metas) {
-    Integer count = 0;
 
     for (String meta : metas) {
       String data = doc.select(meta).attr("content");
-      count++;
       if (data != null && !data.isEmpty()) {
-        logger.info("found at try " + count + " ! ->" + meta + " -> " + data);
         return data;
       }
     }
