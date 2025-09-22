@@ -13,9 +13,10 @@ import org.springframework.web.servlet.view.RedirectView;
 
 import com.manuelpedreira.shorturl.entities.Telemetry;
 import com.manuelpedreira.shorturl.entities.Url;
-import com.manuelpedreira.shorturl.services.TelemetryBuilder;
 import com.manuelpedreira.shorturl.services.TelemetryService;
 import com.manuelpedreira.shorturl.services.UrlService;
+
+import com.manuelpedreira.shorturl.services.helpers.TelemetryBuilder;
 
 import jakarta.servlet.http.HttpServletRequest;
 

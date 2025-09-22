@@ -1,4 +1,4 @@
-package com.manuelpedreira.shorturl.services;
+package com.manuelpedreira.shorturl.services.helpers;
 
 import java.util.regex.Pattern;
 

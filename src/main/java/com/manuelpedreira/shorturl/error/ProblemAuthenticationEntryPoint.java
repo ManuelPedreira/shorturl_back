@@ -21,6 +21,10 @@ import org.springframework.security.web.AuthenticationEntryPoint;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+
+/**
+ * Returns ProblemDetail (application/problem+json) para 401 Unauthorized.
+ */
 public class ProblemAuthenticationEntryPoint implements AuthenticationEntryPoint {
 
   private static final Logger log = LoggerFactory.getLogger(ProblemAuthenticationEntryPoint.class);

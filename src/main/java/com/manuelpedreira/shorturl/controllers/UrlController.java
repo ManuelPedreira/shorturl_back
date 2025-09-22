@@ -34,26 +34,16 @@ public class UrlController {
   @PostMapping
   public ResponseEntity<?> postUrl(@Valid @RequestBody UrlRequestDTO urlRequest) {
 
-    try {
-      Url newUrl = urlService.create(urlRequest.getUrl(), null);
+    Url newUrl = urlService.create(urlRequest.getUrl(), null);
 
-      URI location = ServletUriComponentsBuilder.fromCurrentContextPath()
-          .path("/{shortCode}")
-          .buildAndExpand(newUrl.getShortCode())
-          .toUri();
+    URI location = ServletUriComponentsBuilder.fromCurrentContextPath()
+        .path("/{shortCode}")
+        .buildAndExpand(newUrl.getShortCode())
+        .toUri();
 
-      UrlResponseDTO resp = new UrlResponseDTO(newUrl.getShortCode(), newUrl.getOriginalUrl(), location.toString());
+    UrlResponseDTO resp = new UrlResponseDTO(newUrl.getShortCode(), newUrl.getOriginalUrl(), location.toString());
 
-      return ResponseEntity.created(location).body(resp);
-
-    } catch (IllegalArgumentException ex) {
-      logger.warn("Invalid URL payload: {}", urlRequest.getUrl(), ex);
-      return ResponseEntity.badRequest().build();
-
-    } catch (Exception e) {
-      logger.error("Error postUrl {}: ", urlRequest.getUrl(), e);
-      return ResponseEntity.status(500).build();
-    }
+    return ResponseEntity.created(location).body(resp);
   }
 
 }

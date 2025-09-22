@@ -1,4 +1,4 @@
-package com.manuelpedreira.shorturl.services;
+package com.manuelpedreira.shorturl.services.helpers;
 
 import org.springframework.stereotype.Service;
 

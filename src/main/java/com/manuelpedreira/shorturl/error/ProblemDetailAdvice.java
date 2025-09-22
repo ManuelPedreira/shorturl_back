@@ -36,10 +36,11 @@ public class ProblemDetailAdvice extends ResponseEntityExceptionHandler {
   protected ResponseEntity<Object> handleMethodArgumentNotValid(MethodArgumentNotValidException expection,
       HttpHeaders headers, HttpStatusCode status, WebRequest request) {
 
-    ProblemDetail problemDetail = ProblemDetail.forStatus(status);
-    problemDetail.setTitle("Validation failed");
-    problemDetail.setDetail("Validation failed for one or more fields");
-    problemDetail.setInstance(URI.create(((ServletWebRequest) request).getRequest().getRequestURI()));
+    ProblemDetail problemDetail = createProblemDetail(
+        status,
+        "Validation failed",
+        "Validation failed for one or more fields",
+        request);
 
     List<Map<String, Object>> invalidParams = expection.getBindingResult().getFieldErrors().stream()
         .map(e -> fieldErrorToMap(e))
@@ -51,23 +52,17 @@ public class ProblemDetailAdvice extends ResponseEntityExceptionHandler {
     return ResponseEntity.status(status).contentType(MediaType.APPLICATION_PROBLEM_JSON).body(problemDetail);
   }
 
-  private Map<String, Object> fieldErrorToMap(FieldError fieldError) {
-    return Map.of(
-        "field", fieldError.getField(),
-        "rejectedValue", fieldError.getRejectedValue(),
-        "message", fieldError.getDefaultMessage());
-  }
-
   // 2) Validation on @RequestParam / @PathVariable (Method validation ->
   // ConstraintViolationException)
   @ExceptionHandler(ConstraintViolationException.class)
   protected ResponseEntity<ProblemDetail> handleConstraintViolation(ConstraintViolationException exception,
       WebRequest request) {
 
-    ProblemDetail problemDetail = ProblemDetail.forStatus(HttpStatus.BAD_REQUEST);
-    problemDetail.setTitle("Parameter validation failed");
-    problemDetail.setDetail("One or more request parameters are invalid");
-    problemDetail.setInstance(URI.create(((ServletWebRequest) request).getRequest().getRequestURI()));
+    ProblemDetail problemDetail = createProblemDetail(
+        HttpStatus.BAD_REQUEST,
+        "Parameter validation failed",
+        "One or more request parameters are invalid",
+        request);
 
     var errs = exception.getConstraintViolations().stream()
         .map(constantViolation -> Map.<String, Object>of(
@@ -79,16 +74,30 @@ public class ProblemDetailAdvice extends ResponseEntityExceptionHandler {
     return ResponseEntity.badRequest().contentType(MediaType.APPLICATION_PROBLEM_JSON).body(problemDetail);
   }
 
+  @ExceptionHandler(IllegalArgumentException.class)
+  protected ResponseEntity<ProblemDetail> handleIllegalArgument(IllegalArgumentException exception,
+      WebRequest request) {
+
+    ProblemDetail problemDetail = createProblemDetail(
+        HttpStatus.BAD_REQUEST,
+        "Invalid argument",
+        exception.getMessage(),
+        request);
+
+    return ResponseEntity.badRequest().contentType(MediaType.APPLICATION_PROBLEM_JSON).body(problemDetail);
+  }
+
   // 3) DB conflicts -> 409
   @ExceptionHandler(DataIntegrityViolationException.class)
   protected ResponseEntity<ProblemDetail> handleDataIntegrity(DataIntegrityViolationException ex,
       WebRequest request) {
     log.warn("Data integrity violation", ex);
 
-    ProblemDetail problemDetail = ProblemDetail.forStatus(HttpStatus.CONFLICT);
-    problemDetail.setTitle("Conflict");
-    problemDetail.setDetail("Data integrity violation (unique constraint?)");
-    problemDetail.setInstance(URI.create(((ServletWebRequest) request).getRequest().getRequestURI()));
+    ProblemDetail problemDetail = createProblemDetail(
+        HttpStatus.CONFLICT,
+        "Conflict",
+        "Data integrity violation (unique constraint?)",
+        request);
 
     return ResponseEntity.status(HttpStatus.CONFLICT).contentType(MediaType.APPLICATION_PROBLEM_JSON)
         .body(problemDetail);
@@ -98,11 +107,13 @@ public class ProblemDetailAdvice extends ResponseEntityExceptionHandler {
   // services/controllers)
   @ExceptionHandler(ResponseStatusException.class)
   protected ResponseEntity<ProblemDetail> handleResponseStatus(ResponseStatusException exception, WebRequest request) {
-    ProblemDetail problemDetail = ProblemDetail.forStatus(exception.getStatusCode());
-    problemDetail
-        .setTitle(exception.getReason() != null ? exception.getReason() : exception.getStatusCode().toString());
-    problemDetail.setDetail(exception.getMessage());
-    problemDetail.setInstance(URI.create(((ServletWebRequest) request).getRequest().getRequestURI()));
+
+    ProblemDetail problemDetail = createProblemDetail(
+        exception.getStatusCode(),
+        exception.getReason() != null ? exception.getReason() : exception.getStatusCode().toString(),
+        exception.getMessage(),
+        request);
+
     return ResponseEntity.status(exception.getStatusCode()).contentType(MediaType.APPLICATION_PROBLEM_JSON)
         .body(problemDetail);
   }
@@ -112,11 +123,30 @@ public class ProblemDetailAdvice extends ResponseEntityExceptionHandler {
   @ExceptionHandler(Exception.class)
   protected ResponseEntity<ProblemDetail> handleAll(Exception exception, WebRequest request) {
     log.error("Unhandled exception", exception);
-    ProblemDetail problemDetail = ProblemDetail.forStatus(HttpStatus.INTERNAL_SERVER_ERROR);
-    problemDetail.setTitle("Internal Server Error");
-    problemDetail.setDetail("An unexpected error occurred");
-    problemDetail.setInstance(URI.create(((ServletWebRequest) request).getRequest().getRequestURI()));
+
+    ProblemDetail problemDetail = createProblemDetail(
+        HttpStatus.INTERNAL_SERVER_ERROR,
+        "Internal Server Error",
+        "An unexpected error occurred",
+        request);
+
     return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).contentType(MediaType.APPLICATION_PROBLEM_JSON)
         .body(problemDetail);
+  }
+
+  private ProblemDetail createProblemDetail(HttpStatusCode httpStatus, String title, String detail,
+      WebRequest request) {
+    ProblemDetail problemDetail = ProblemDetail.forStatus(httpStatus);
+    problemDetail.setTitle(title);
+    problemDetail.setDetail(detail);
+    problemDetail.setInstance(URI.create(((ServletWebRequest) request).getRequest().getRequestURI()));
+    return problemDetail;
+  }
+
+  private Map<String, Object> fieldErrorToMap(FieldError fieldError) {
+    return Map.of(
+        "field", fieldError.getField(),
+        "rejectedValue", fieldError.getRejectedValue(),
+        "message", fieldError.getDefaultMessage());
   }
 }

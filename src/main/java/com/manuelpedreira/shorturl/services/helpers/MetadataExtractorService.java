@@ -1,9 +1,11 @@
-package com.manuelpedreira.shorturl.services;
+package com.manuelpedreira.shorturl.services.helpers;
 
 import java.io.IOException;
+import java.text.Normalizer;
 
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
+import org.jsoup.safety.Safelist;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -21,7 +23,10 @@ public class MetadataExtractorService {
   private static final Logger logger = LoggerFactory.getLogger(MetadataExtractorService.class);
 
   @Autowired
-  UrlRepository urlRepository;
+  private UrlRepository urlRepository;
+
+  @Autowired
+  private SafeUrlValidator safeUrlValidator;
 
   @Async("metadataExecutor")
   @Transactional
@@ -57,6 +62,10 @@ public class MetadataExtractorService {
           "meta[name=twitter:image]",
           "meta[name=image]"));
 
+      url.setTitle(sanitizeText(url.getTitle(), 200));
+      url.setDescription(sanitizeText(url.getDescription(), 1000));
+      if (!safeUrlValidator.isSafeUrl(url.getImageUrl())) url.setImageUrl("");
+
     } catch (IOException e) {
       url.setTitle(url.getOriginalUrl());
       logger.error("Failed to fetch metadata for URL: " + url.getOriginalUrl(), e);
@@ -75,5 +84,22 @@ public class MetadataExtractorService {
     }
     return "";
   }
+
+    private String sanitizeText(String input, int maxLen) {
+    if (input == null) return "";
+    // elimina cualquier HTML, deja texto y escapa entities
+    String cleaned = Jsoup.clean(input, Safelist.none());
+    // normaliza unicode (evita trucos con combining chars)
+    cleaned = Normalizer.normalize(cleaned, Normalizer.Form.NFKC);
+    // quita caracteres de control (excepto los útiles)
+    cleaned = cleaned.replaceAll("[\\p{Cntrl}&&[^\r\n\t]]+", "");
+    cleaned = cleaned.trim();
+    if (cleaned.length() > maxLen) {
+      cleaned = cleaned.substring(0, maxLen);
+    }
+    return cleaned;
+  }
+
+  
 
 }

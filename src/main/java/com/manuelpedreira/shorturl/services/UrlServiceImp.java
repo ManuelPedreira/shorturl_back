@@ -13,6 +13,9 @@ import org.springframework.transaction.annotation.Transactional;
 import com.manuelpedreira.shorturl.entities.Url;
 import com.manuelpedreira.shorturl.entities.User;
 import com.manuelpedreira.shorturl.repositories.UrlRepository;
+import com.manuelpedreira.shorturl.services.helpers.MetadataExtractorService;
+import com.manuelpedreira.shorturl.services.helpers.SafeUrlValidator;
+import com.manuelpedreira.shorturl.services.helpers.ShortCodeGeneratorService;
 
 @Service
 public class UrlServiceImp implements UrlService {
@@ -20,6 +23,7 @@ public class UrlServiceImp implements UrlService {
   private UrlRepository urlRepository;
   private MetadataExtractorService metadataExtractorService;
   private ShortCodeGeneratorService codeGeneratorService;
+  private SafeUrlValidator safeUrlValidator;
 
   final int MAX_ATTEMPTS = 6;
 
@@ -29,10 +33,11 @@ public class UrlServiceImp implements UrlService {
   private int defaultExpirationMonths;
 
   public UrlServiceImp(UrlRepository urlRepository, MetadataExtractorService metadataExtractorService,
-      ShortCodeGeneratorService codeGeneratorService) {
+      ShortCodeGeneratorService codeGeneratorService, SafeUrlValidator safeUrlValidator) {
     this.urlRepository = urlRepository;
     this.metadataExtractorService = metadataExtractorService;
     this.codeGeneratorService = codeGeneratorService;
+    this.safeUrlValidator = safeUrlValidator;
   }
 
   @Override
@@ -44,6 +49,9 @@ public class UrlServiceImp implements UrlService {
   @Override
   @Transactional
   public Url create(String originalUrl, User user) {
+
+    if (!safeUrlValidator.isSafeUrl(originalUrl))
+      throw new IllegalArgumentException("URL is not allowed");
 
     Url url = new Url();
     url.setOriginalUrl(originalUrl);

@@ -19,7 +19,7 @@ import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.web.access.AccessDeniedHandler;
 
 /**
- * Devuelve ProblemDetail (application/problem+json) para 403 Forbidden.
+ * Returns ProblemDetail (application/problem+json) para 403 Forbidden.
  */
 public class ProblemAccessDeniedHandler implements AccessDeniedHandler {
 
