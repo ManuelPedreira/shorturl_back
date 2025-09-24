@@ -21,6 +21,11 @@ public class SafeUrlValidator {
     public boolean isSafeUrl(URI uri) {
         if (uri == null)
             return false;
+
+        int port = uri.getPort();
+        if (port != -1 && port != 80 && port != 443)
+            return false;
+
         String scheme = uri.getScheme();
         if (scheme == null)
             return false;

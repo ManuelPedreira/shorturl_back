@@ -2,7 +2,6 @@ package com.manuelpedreira.shorturl.services;
 
 import java.util.List;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -15,11 +14,13 @@ import com.manuelpedreira.shorturl.repositories.UrlRepository;
 @Service
 public class TelemetryServiceImp implements TelemetryService {
 
-  @Autowired
   TelemetryRepository telemetryRepository;
-  
-  @Autowired
   UrlRepository urlRepository;
+
+  public TelemetryServiceImp(TelemetryRepository telemetryRepository, UrlRepository urlRepository) {
+    this.telemetryRepository = telemetryRepository;
+    this.urlRepository = urlRepository;
+  }
 
   @Override
   @Transactional
@@ -39,7 +40,7 @@ public class TelemetryServiceImp implements TelemetryService {
 
   @Override
   @Transactional(readOnly = true)
-  public List<Telemetry> getTelemegryByUrl(Url url) {
+  public List<Telemetry> getTelemetryByUrl(Url url) {
     return telemetryRepository.findByUrl(url);
   }
 

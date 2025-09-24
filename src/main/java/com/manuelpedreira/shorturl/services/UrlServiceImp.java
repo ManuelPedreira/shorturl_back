@@ -20,14 +20,14 @@ import com.manuelpedreira.shorturl.services.helpers.ShortCodeGeneratorService;
 @Service
 public class UrlServiceImp implements UrlService {
 
-  private UrlRepository urlRepository;
-  private MetadataExtractorService metadataExtractorService;
-  private ShortCodeGeneratorService codeGeneratorService;
-  private SafeUrlValidator safeUrlValidator;
-
-  final int MAX_ATTEMPTS = 6;
+  private final UrlRepository urlRepository;
+  private final MetadataExtractorService metadataExtractorService;
+  private final ShortCodeGeneratorService codeGeneratorService;
+  private final SafeUrlValidator safeUrlValidator;
 
   private static final Logger logger = LoggerFactory.getLogger(UrlServiceImp.class);
+
+  final int MAX_ATTEMPTS = 6;
 
   @Value("${custom.url.default.expiration.months}")
   private int defaultExpirationMonths;
@@ -61,7 +61,7 @@ public class UrlServiceImp implements UrlService {
 
     for (int saveAttempt = 1; saveAttempt <= MAX_ATTEMPTS; saveAttempt++) {
       try {
-        url.setShortCode(codeGeneratorService.generarShortCode());
+        url.setShortCode(codeGeneratorService.generateShortCode());
         Url urlCreated = urlRepository.save(url);
 
         metadataExtractorService.enrichUrlAndSaveAsync(urlCreated.getId(), originalUrl);

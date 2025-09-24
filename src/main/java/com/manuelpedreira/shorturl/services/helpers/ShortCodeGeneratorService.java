@@ -1,14 +1,27 @@
 package com.manuelpedreira.shorturl.services.helpers;
 
+import java.security.SecureRandom;
+
 import org.springframework.stereotype.Service;
 
 @Service
 public class ShortCodeGeneratorService {
 
-  public String generarShortCode() {
+  private static final char[] ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz0123456789".toCharArray();
+  private static final int DEFAULT_LENGTH = 7; // matches route pattern {shortCode:[a-zA-Z0-9]{7}}
+  private final SecureRandom secureRandom = new SecureRandom();
 
-    String newShortCode = java.util.UUID.randomUUID().toString().replaceAll("[^a-zA-Z0-9]", "").substring(0, 7);
+  public String generateShortCode() {
+    return generate(DEFAULT_LENGTH);
+  }
 
-    return newShortCode;
+  public String generate(int length) {
+    if (length <= 0) throw new IllegalArgumentException("length must be > 0");
+    StringBuilder builder = new StringBuilder(length);
+    for (int i = 0; i < length; i++) {
+      int idx = secureRandom.nextInt(ALPHABET.length);
+      builder.append(ALPHABET[idx]);
+    }
+    return builder.toString();
   }
 }

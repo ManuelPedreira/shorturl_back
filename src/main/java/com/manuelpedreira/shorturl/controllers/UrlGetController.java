@@ -2,7 +2,6 @@ package com.manuelpedreira.shorturl.controllers;
 
 import java.util.Optional;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -23,14 +22,15 @@ import jakarta.servlet.http.HttpServletRequest;
 @Controller
 public class UrlGetController {
 
-  @Autowired
-  private UrlService urlService;
+  private final UrlService urlService;
+  private final TelemetryService telemetryService;
+  private final TelemetryBuilder telemetryBuilder;
 
-  @Autowired
-  private TelemetryService telemetryService;
-
-  @Autowired
-  private TelemetryBuilder telemetryBuilder;
+  public UrlGetController(UrlService urlService, TelemetryService telemetryService, TelemetryBuilder telemetryBuilder) {
+    this.urlService = urlService;
+    this.telemetryService = telemetryService;
+    this.telemetryBuilder = telemetryBuilder;
+  }
 
   @GetMapping("/{shortCode:[a-zA-Z0-9]{7}}")
   // http://localhost:8080/abcd123

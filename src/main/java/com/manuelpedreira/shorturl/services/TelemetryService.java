@@ -11,6 +11,6 @@ public interface TelemetryService {
 
   public void registerAsyncVisit(Telemetry telemetry, Url url);
 
-  public List<Telemetry> getTelemegryByUrl (Url url);
+  public List<Telemetry> getTelemetryByUrl (Url url);
 
 }
