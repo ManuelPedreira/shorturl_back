@@ -53,7 +53,6 @@ Metadata extraction and telemetry are processed asynchronously.
 ## Security
 - Public: `POST /api`, `GET /{shortCode:[a-zA-Z0-9]{7}}`
 - All other paths are protected
-- Ownership model (planned): users can manage their own links and telemetry
 
 ## Database
 - `urls`: short code, original URL, metadata, timestamps, optional owner
@@ -61,10 +60,9 @@ Metadata extraction and telemetry are processed asynchronously.
 - `users` (WIP): accounts for link ownership/management
 
 ## Roadmap
-- Authentication, dashboards, and ownership enforcement
+- Authentication, dashboards, and user panel
 - Telemetry reports and filters
-- Custom domains and vanity codes
-- Rate limiting and abuse prevention
+- Custom url codes
 
 ## Tech
 Spring Boot 3, Spring Data JPA, Spring Security, Thymeleaf, PostgreSQL, Jsoup.
