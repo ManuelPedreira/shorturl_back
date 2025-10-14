@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.text.Normalizer;
 
 import org.jsoup.Jsoup;
+import org.jsoup.Connection.Response;
 import org.jsoup.nodes.Document;
 import org.jsoup.safety.Safelist;
 import org.slf4j.Logger;
@@ -20,6 +21,7 @@ import jakarta.transaction.Transactional;
 public class MetadataExtractorService {
 
   private static final Logger logger = LoggerFactory.getLogger(MetadataExtractorService.class);
+  private static final int MAX_REDIRECTIONS = 2;
 
   private UrlRepository urlRepository;
   private SafeUrlValidator safeUrlValidator;
@@ -40,12 +42,8 @@ public class MetadataExtractorService {
 
   public Url enrichUrlWithMetaDataJsoup(Url url) {
 
-    Document doc;
     try {
-      doc = Jsoup.connect(url.getOriginalUrl())
-          .timeout(5000)
-          .followRedirects(false)
-          .get();
+      Document doc = resolveRedirects(url.getOriginalUrl(), MAX_REDIRECTIONS);
 
       url.setTitle(doc.title());
       if (url.getTitle().isEmpty())
@@ -66,6 +64,7 @@ public class MetadataExtractorService {
 
       url.setTitle(sanitizeText(url.getTitle(), 200));
       url.setDescription(sanitizeText(url.getDescription(), 1000));
+
       if (!safeUrlValidator.isSafeUrl(url.getImageUrl()))
         url.setImageUrl("");
 
@@ -75,6 +74,23 @@ public class MetadataExtractorService {
     }
 
     return url;
+  }
+
+  private Document resolveRedirects(String url, int maxRedirections) throws IOException {
+
+    if (!safeUrlValidator.isSafeUrl(url)) throw new IOException("URL Redirection failed");
+
+    Response response = Jsoup.connect(url)
+        .timeout(5000)
+        .followRedirects(false)
+        .execute();
+
+    if (maxRedirections == 0 ||
+        response.statusCode() < 300 || response.statusCode() >= 400 ||
+        response.header("Location") == null)
+      return response.parse();
+
+    return resolveRedirects(response.header("Location"), maxRedirections - 1);
   }
 
   private String getFirstJsoupSelect(Document doc, String... metas) {
