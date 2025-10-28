@@ -9,9 +9,11 @@ import org.jsoup.nodes.Document;
 import org.jsoup.safety.Safelist;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
+import com.manuelpedreira.shorturl.dto.UrlUpdateMessageDTO;
 import com.manuelpedreira.shorturl.entities.Url;
 import com.manuelpedreira.shorturl.repositories.UrlRepository;
 
@@ -23,21 +25,48 @@ public class MetadataExtractorService {
   private static final Logger logger = LoggerFactory.getLogger(MetadataExtractorService.class);
   private static final int MAX_REDIRECTIONS = 2;
 
-  private UrlRepository urlRepository;
-  private SafeUrlValidator safeUrlValidator;
+  private final UrlRepository urlRepository;
+  private final SafeUrlValidator safeUrlValidator;
+  private final SimpMessagingTemplate messagingTemplate;
 
-  public MetadataExtractorService(UrlRepository urlRepository, SafeUrlValidator safeUrlValidator) {
+  public MetadataExtractorService(UrlRepository urlRepository, SafeUrlValidator safeUrlValidator,
+      SimpMessagingTemplate messagingTemplate) {
     this.urlRepository = urlRepository;
     this.safeUrlValidator = safeUrlValidator;
+    this.messagingTemplate = messagingTemplate;
   }
 
   @Async("metadataExecutor")
   @Transactional
-  public void enrichUrlAndSaveAsync(Long urlId, String originalUrl) {
+  public void enrichUrlAndSaveAsync(Long urlId, String urlShortCode, String originalUrl) {
     Url url = new Url();
     url.setOriginalUrl(originalUrl);
-    enrichUrlWithMetaDataJsoup(url);
-    urlRepository.saveMetaData(urlId, url.getTitle(), url.getDescription(), url.getImageUrl());
+
+    try {
+      enrichUrlWithMetaDataJsoup(url);
+      urlRepository.saveMetaData(urlId, url.getTitle(), url.getDescription(), url.getImageUrl());
+
+      UrlUpdateMessageDTO message = new UrlUpdateMessageDTO(
+          urlShortCode,
+          originalUrl,
+          url.getTitle(),
+          url.getDescription(),
+          url.getImageUrl(),
+          "done");
+      // post in /topic/url.{shortCode}
+      messagingTemplate.convertAndSend("/topic/url." + urlShortCode, message);
+
+    } catch (Exception e) {
+      logger.error("Failed to extract metadata for urlId=" + urlId, e);
+      UrlUpdateMessageDTO message = new UrlUpdateMessageDTO(
+          urlShortCode,
+          originalUrl,
+          urlShortCode,
+          "",
+          "",
+          "error");
+      messagingTemplate.convertAndSend("/topic/url." + urlShortCode, message);
+    }
   }
 
   public Url enrichUrlWithMetaDataJsoup(Url url) {
@@ -78,7 +107,8 @@ public class MetadataExtractorService {
 
   private Document resolveRedirects(String url, int maxRedirections) throws IOException {
 
-    if (!safeUrlValidator.isSafeUrl(url)) throw new IOException("URL Redirection failed");
+    if (!safeUrlValidator.isSafeUrl(url))
+      throw new IOException("URL Redirection failed");
 
     Response response = Jsoup.connect(url)
         .timeout(5000)

@@ -64,7 +64,7 @@ public class UrlServiceImp implements UrlService {
         url.setShortCode(codeGeneratorService.generateShortCode());
         Url urlCreated = urlRepository.save(url);
 
-        metadataExtractorService.enrichUrlAndSaveAsync(urlCreated.getId(), originalUrl);
+        metadataExtractorService.enrichUrlAndSaveAsync(urlCreated.getId(), urlCreated.getShortCode(), originalUrl);
 
         return urlCreated;
 

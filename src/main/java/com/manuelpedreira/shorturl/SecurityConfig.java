@@ -32,6 +32,7 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(HttpMethod.GET, "/{shortCode:[a-zA-Z0-9]{7}}").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/ws/**").permitAll()
                         .anyRequest().authenticated())
                 .exceptionHandling(ex -> ex
                         .authenticationEntryPoint(authEntryPoint)
