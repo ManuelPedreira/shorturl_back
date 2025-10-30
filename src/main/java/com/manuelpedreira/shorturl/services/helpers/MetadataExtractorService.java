@@ -16,6 +16,7 @@ import org.springframework.stereotype.Service;
 import com.manuelpedreira.shorturl.dto.UrlUpdateMessageDTO;
 import com.manuelpedreira.shorturl.entities.Url;
 import com.manuelpedreira.shorturl.repositories.UrlRepository;
+import com.manuelpedreira.shorturl.websocket.InMemoryMessageBuffer;
 
 import jakarta.transaction.Transactional;
 
@@ -28,12 +29,14 @@ public class MetadataExtractorService {
   private final UrlRepository urlRepository;
   private final SafeUrlValidator safeUrlValidator;
   private final SimpMessagingTemplate messagingTemplate;
+  private final InMemoryMessageBuffer messageBuffer;
 
   public MetadataExtractorService(UrlRepository urlRepository, SafeUrlValidator safeUrlValidator,
-      SimpMessagingTemplate messagingTemplate) {
+      SimpMessagingTemplate messagingTemplate, InMemoryMessageBuffer messageBuffer) {
     this.urlRepository = urlRepository;
     this.safeUrlValidator = safeUrlValidator;
     this.messagingTemplate = messagingTemplate;
+    this.messageBuffer = messageBuffer;
   }
 
   @Async("metadataExecutor")
@@ -54,6 +57,7 @@ public class MetadataExtractorService {
           url.getImageUrl(),
           "done");
       // post in /topic/url.{shortCode}
+      messageBuffer.put(urlShortCode, message);
       messagingTemplate.convertAndSend("/topic/url." + urlShortCode, message);
 
     } catch (Exception e) {
@@ -65,6 +69,7 @@ public class MetadataExtractorService {
           "",
           "",
           "error");
+      messageBuffer.put(urlShortCode, message);
       messagingTemplate.convertAndSend("/topic/url." + urlShortCode, message);
     }
   }
