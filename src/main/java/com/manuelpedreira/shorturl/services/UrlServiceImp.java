@@ -24,20 +24,21 @@ public class UrlServiceImp implements UrlService {
   private final MetadataExtractorService metadataExtractorService;
   private final ShortCodeGeneratorService codeGeneratorService;
   private final SafeUrlValidator safeUrlValidator;
+  private final int defaultExpirationMonths;
 
   private static final Logger logger = LoggerFactory.getLogger(UrlServiceImp.class);
 
   final int MAX_ATTEMPTS = 6;
 
-  @Value("${custom.url.default.expiration.months}")
-  private int defaultExpirationMonths;
 
   public UrlServiceImp(UrlRepository urlRepository, MetadataExtractorService metadataExtractorService,
-      ShortCodeGeneratorService codeGeneratorService, SafeUrlValidator safeUrlValidator) {
+      ShortCodeGeneratorService codeGeneratorService, SafeUrlValidator safeUrlValidator,
+      @Value("${custom.url.default.expiration.months}") int defaultExpirationMonths) {
     this.urlRepository = urlRepository;
     this.metadataExtractorService = metadataExtractorService;
     this.codeGeneratorService = codeGeneratorService;
     this.safeUrlValidator = safeUrlValidator;
+    this.defaultExpirationMonths = defaultExpirationMonths;
   }
 
   @Override
