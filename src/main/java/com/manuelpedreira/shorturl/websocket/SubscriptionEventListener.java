@@ -31,10 +31,10 @@ public class SubscriptionEventListener implements ApplicationListener<SessionSub
   public void onApplicationEvent(@NonNull SessionSubscribeEvent event) {
     SimpMessageHeaderAccessor accessor = SimpMessageHeaderAccessor.wrap(event.getMessage());
 
-    String sessionId = accessor.getSessionId(); // ID único de la sesión WebSocket
-    String destination = accessor.getDestination(); // Destino suscrito (ej: "/topic/chat")
-    // accessor.getSubscriptionId(); // ID único de la suscripción
-    // accessor.getUser(); // Usuario autenticado (si existe)
+    String sessionId = accessor.getSessionId();
+    String destination = accessor.getDestination(); // /topic/url.{code}
+    // accessor.getSubscriptionId();
+    // accessor.getUser();
 
     if (destination == null || sessionId == null)
       return;
