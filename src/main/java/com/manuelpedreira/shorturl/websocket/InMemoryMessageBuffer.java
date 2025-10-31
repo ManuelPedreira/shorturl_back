@@ -2,72 +2,36 @@ package com.manuelpedreira.shorturl.websocket;
 
 import java.time.Instant;
 import java.util.concurrent.*;
-import java.util.stream.Collectors;
 
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
+
+import com.manuelpedreira.shorturl.dto.UrlWebSocketMessageDTO;
 
 @Component
 public class InMemoryMessageBuffer {
 
-  private static class Buffered {
-    final Object payload;
-    final ScheduledFuture<?> expiryTask;
-    final Instant expiryAt;
+  private final ConcurrentHashMap<String, UrlWebSocketMessageDTO> map = new ConcurrentHashMap<>();
 
-    Buffered(Object payload, ScheduledFuture<?> expiryTask, Instant expiryAt) {
-      this.payload = payload;
-      this.expiryTask = expiryTask;
-      this.expiryAt = expiryAt;
-    }
+  @Scheduled(fixedRate = 5000)
+  public void cleanExpiredEntries() {
+    Instant now = Instant.now();
+    map.entrySet().removeIf(message -> message.getValue().getExpiryAt().isBefore(now));
   }
 
-  private final ConcurrentHashMap<String, Buffered> map = new ConcurrentHashMap<>();
-  private final ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
-
-  // TTL in seconds (ajústalo)
-  private final long ttlSeconds = 15L;
-
-  public void put(String shortCode, Object payload) {
-    // if an existing buffered entry exists, cancel its expiry
-    Buffered previous = map.remove(shortCode);
-    if (previous != null && previous.expiryTask != null) {
-      previous.expiryTask.cancel(false);
-    }
-
-    Instant expiryAt = Instant.now().plusSeconds(ttlSeconds);
-    ScheduledFuture<?> task = scheduler.schedule(() -> {
-      map.remove(shortCode);
-    }, ttlSeconds, TimeUnit.SECONDS);
-
-
-    map.put(shortCode, new Buffered(payload, task, expiryAt));
-    System.out.println("PUT :" + shortCode + ", map: " + map.entrySet().stream()
-        .map(e -> e.getKey() + "=" + e.getValue().expiryAt)
-        .collect(Collectors.joining(", ", "{", "}")));
+  public void put(String shortCode, UrlWebSocketMessageDTO message) {
+    map.put(shortCode, message);
   }
 
-  public Object getAndRemove(String shortCode) {
-    Buffered b = map.remove(shortCode);
-    if (b == null)
-      return null;
-    if (b.expiryTask != null)
-      b.expiryTask.cancel(false);
-
-    System.out.println("GET and REMOVE :" + shortCode + ", map: " + map.entrySet().stream()
-        .map(e -> e.getKey() + "=" + e.getValue().expiryAt)
-        .collect(Collectors.joining(", ", "{", "}")));
-        
-    return b.payload;
+  public UrlWebSocketMessageDTO getAndRemove(String shortCode) {
+    return map.remove(shortCode);
   }
 
-  public Object peek(String shortCode) {
-    Buffered b = map.get(shortCode);
-    return b == null ? null : b.payload;
+  public UrlWebSocketMessageDTO get(String shortCode) {
+    return map.get(shortCode);
   }
 
   public void remove(String shortCode) {
-    Buffered b = map.remove(shortCode);
-    if (b != null && b.expiryTask != null)
-      b.expiryTask.cancel(false);
+    map.remove(shortCode);
   }
 }

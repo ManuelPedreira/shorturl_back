@@ -1,24 +1,29 @@
 package com.manuelpedreira.shorturl.dto;
 
-public class UrlUpdateMessageDTO {
+import java.time.Instant;
+
+public class UrlWebSocketMessageDTO {
+
   private String shortCode;
   private String originalUrl;
   private String title;
   private String description;
   private String imageUrl;
   private String status;
+  private Instant expiryAt;
 
-  public UrlUpdateMessageDTO() {
+  public UrlWebSocketMessageDTO() {
   }
 
-  public UrlUpdateMessageDTO(String shortCode, String originalUrl, String title, String description, String imageUrl,
-      String status) {
+  public UrlWebSocketMessageDTO(String shortCode, String originalUrl, String title, String description, String imageUrl,
+      String status, Instant expiryAt) {
     this.shortCode = shortCode;
     this.originalUrl = originalUrl;
     this.title = title;
     this.description = description;
     this.imageUrl = imageUrl;
     this.status = status;
+    this.expiryAt = expiryAt;
   }
 
   // getters y setters
@@ -69,4 +74,13 @@ public class UrlUpdateMessageDTO {
   public void setStatus(String status) {
     this.status = status;
   }
+
+  public Instant getExpiryAt() {
+    return expiryAt;
+  }
+
+  public void setExpiryAt(Instant expiryAt) {
+    this.expiryAt = expiryAt;
+  }
+
 }

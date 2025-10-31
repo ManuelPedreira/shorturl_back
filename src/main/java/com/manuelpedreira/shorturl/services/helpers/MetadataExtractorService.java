@@ -2,6 +2,7 @@ package com.manuelpedreira.shorturl.services.helpers;
 
 import java.io.IOException;
 import java.text.Normalizer;
+import java.time.Instant;
 
 import org.jsoup.Jsoup;
 import org.jsoup.Connection.Response;
@@ -9,11 +10,12 @@ import org.jsoup.nodes.Document;
 import org.jsoup.safety.Safelist;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
-import com.manuelpedreira.shorturl.dto.UrlUpdateMessageDTO;
+import com.manuelpedreira.shorturl.dto.UrlWebSocketMessageDTO;
 import com.manuelpedreira.shorturl.entities.Url;
 import com.manuelpedreira.shorturl.repositories.UrlRepository;
 import com.manuelpedreira.shorturl.websocket.InMemoryMessageBuffer;
@@ -24,7 +26,9 @@ import jakarta.transaction.Transactional;
 public class MetadataExtractorService {
 
   private static final Logger logger = LoggerFactory.getLogger(MetadataExtractorService.class);
-  private static final int MAX_REDIRECTIONS = 2;
+
+  private final int maxRedirections;
+  private final int ttlSeconds;
 
   private final UrlRepository urlRepository;
   private final SafeUrlValidator safeUrlValidator;
@@ -32,11 +36,16 @@ public class MetadataExtractorService {
   private final InMemoryMessageBuffer messageBuffer;
 
   public MetadataExtractorService(UrlRepository urlRepository, SafeUrlValidator safeUrlValidator,
-      SimpMessagingTemplate messagingTemplate, InMemoryMessageBuffer messageBuffer) {
+      SimpMessagingTemplate messagingTemplate, InMemoryMessageBuffer messageBuffer,
+      @Value("${custom.url.fetch.max_redirections}") int maxRedirections,
+      @Value("${custom.websocket.expirationTime.seconds}") int ttlSeconds) {
+
     this.urlRepository = urlRepository;
     this.safeUrlValidator = safeUrlValidator;
     this.messagingTemplate = messagingTemplate;
     this.messageBuffer = messageBuffer;
+    this.maxRedirections = maxRedirections;
+    this.ttlSeconds = ttlSeconds;
   }
 
   @Async("metadataExecutor")
@@ -49,26 +58,29 @@ public class MetadataExtractorService {
       enrichUrlWithMetaDataJsoup(url);
       urlRepository.saveMetaData(urlId, url.getTitle(), url.getDescription(), url.getImageUrl());
 
-      UrlUpdateMessageDTO message = new UrlUpdateMessageDTO(
+      UrlWebSocketMessageDTO message = new UrlWebSocketMessageDTO(
           urlShortCode,
           originalUrl,
           url.getTitle(),
           url.getDescription(),
           url.getImageUrl(),
-          "done");
+          "done",
+          Instant.now().plusSeconds(ttlSeconds));
       // post in /topic/url.{shortCode}
       messageBuffer.put(urlShortCode, message);
       messagingTemplate.convertAndSend("/topic/url." + urlShortCode, message);
 
     } catch (Exception e) {
       logger.error("Failed to extract metadata for urlId=" + urlId, e);
-      UrlUpdateMessageDTO message = new UrlUpdateMessageDTO(
+      UrlWebSocketMessageDTO message = new UrlWebSocketMessageDTO(
           urlShortCode,
           originalUrl,
           urlShortCode,
           "",
           "",
-          "error");
+          "error",
+          Instant.now().plusSeconds(ttlSeconds));
+          
       messageBuffer.put(urlShortCode, message);
       messagingTemplate.convertAndSend("/topic/url." + urlShortCode, message);
     }
@@ -77,7 +89,7 @@ public class MetadataExtractorService {
   public Url enrichUrlWithMetaDataJsoup(Url url) {
 
     try {
-      Document doc = resolveRedirects(url.getOriginalUrl(), MAX_REDIRECTIONS);
+      Document doc = resolveRedirects(url.getOriginalUrl(), maxRedirections);
 
       url.setTitle(doc.title());
       if (url.getTitle().isEmpty())
