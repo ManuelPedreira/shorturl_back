@@ -1,1 +1,2 @@
 INSERT INTO urls (short_code,original_url,title,description,image_url) VALUES ('abcd123','https://www.youtube.com/watch?v=bkUjjTwluQI','FÍSICA CUÁNTICA: Los Conceptos Básicos en 25 minutos','Los fundamentos de la mecánica cuántica aquí condensados en esta serie en formato vertical. Si quieres disfrutarlos en el móvil, te recomiendo tirar de esta ...','https://i.ytimg.com/vi/bkUjjTwluQI/maxresdefault.jpg');
+INSERT INTO urls (short_code,original_url,title,description,image_url) VALUES ('abcd124','https://www.youtube.com/watch?v=bkUjjTwluQI', null , null , null );

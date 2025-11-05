@@ -1,5 +1,7 @@
 package com.manuelpedreira.shorturl.controllers;
 
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.util.Optional;
 
 import org.springframework.http.HttpStatus;
@@ -45,6 +47,7 @@ public class UrlGetController {
     Telemetry telemetry = telemetryBuilder.buildTelemetry(req);
 
     if (telemetry.isBot()) {
+      fillDefaultUrl(url);
       model.addAttribute("url", url);
       return new ModelAndView("botPage");
 
@@ -55,5 +58,23 @@ public class UrlGetController {
       redirectView.setStatusCode(HttpStatus.TEMPORARY_REDIRECT);
       return new ModelAndView(redirectView);
     }
+  }
+
+  private void fillDefaultUrl(Url url) {
+    if (isNullOrBlank(url.getTitle())) {
+      try {
+        url.setTitle(new URI(url.getOriginalUrl()).getHost());
+      } catch (URISyntaxException e) {
+        url.setTitle(url.getShortCode());
+      }
+    }
+
+    if (isNullOrBlank(url.getDescription())) {
+      url.setDescription(url.getOriginalUrl());
+    }
+  }
+
+  private boolean isNullOrBlank(String evaluate) {
+    return (evaluate == null || evaluate.isBlank());
   }
 }

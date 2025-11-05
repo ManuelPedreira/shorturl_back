@@ -71,53 +71,47 @@ public class MetadataExtractorService {
       messagingTemplate.convertAndSend("/topic/url." + urlShortCode, message);
 
     } catch (Exception e) {
-      logger.error("Failed to extract metadata for urlId=" + urlId, e);
+      logger.error("Failed to extract metadata for urlId={} - {}", urlId, e.getMessage());
       UrlWebSocketMessageDTO message = new UrlWebSocketMessageDTO(
           urlShortCode,
           originalUrl,
-          urlShortCode,
+          "",
           "",
           "",
           "error",
           Instant.now().plusSeconds(ttlSeconds));
-          
+
       messageBuffer.put(urlShortCode, message);
       messagingTemplate.convertAndSend("/topic/url." + urlShortCode, message);
     }
   }
 
-  public Url enrichUrlWithMetaDataJsoup(Url url) {
+  public Url enrichUrlWithMetaDataJsoup(Url url) throws IOException {
 
-    try {
-      Document doc = resolveRedirects(url.getOriginalUrl(), maxRedirections);
+    Document doc = resolveRedirects(url.getOriginalUrl(), maxRedirections);
 
-      url.setTitle(doc.title());
-      if (url.getTitle().isEmpty())
-        url.setTitle(getFirstJsoupSelect(doc,
-            "meta[property=og:title]",
-            "meta[name=twitter:title]"));
+    url.setTitle(doc.title());
+    if (url.getTitle().isEmpty())
+      url.setTitle(getFirstJsoupSelect(doc,
+          "meta[property=og:title]",
+          "meta[name=twitter:title]"));
 
-      url.setDescription(getFirstJsoupSelect(doc,
-          "meta[name=description]",
-          "meta[property=og:description]",
-          "meta[name=twitter:description]"));
+    url.setDescription(getFirstJsoupSelect(doc,
+        "meta[name=description]",
+        "meta[property=og:description]",
+        "meta[name=twitter:description]"));
 
-      url.setImageUrl(getFirstJsoupSelect(doc,
-          "meta[property=og:image]",
-          "meta[property=og:image:url]",
-          "meta[name=twitter:image]",
-          "meta[name=image]"));
+    url.setImageUrl(getFirstJsoupSelect(doc,
+        "meta[property=og:image]",
+        "meta[property=og:image:url]",
+        "meta[name=twitter:image]",
+        "meta[name=image]"));
 
-      url.setTitle(sanitizeText(url.getTitle(), 200));
-      url.setDescription(sanitizeText(url.getDescription(), 1000));
+    url.setTitle(sanitizeText(url.getTitle(), 200));
+    url.setDescription(sanitizeText(url.getDescription(), 1000));
 
-      if (!safeUrlValidator.isSafeUrl(url.getImageUrl()))
-        url.setImageUrl("");
-
-    } catch (IOException e) {
-      url.setTitle(url.getOriginalUrl());
-      logger.error("Failed to fetch metadata for URL: " + url.getOriginalUrl(), e);
-    }
+    if (!safeUrlValidator.isSafeUrl(url.getImageUrl()))
+      url.setImageUrl("");
 
     return url;
   }
