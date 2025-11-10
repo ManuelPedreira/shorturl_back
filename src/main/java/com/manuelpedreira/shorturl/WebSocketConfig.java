@@ -1,18 +1,28 @@
 package com.manuelpedreira.shorturl;
 
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.messaging.simp.config.ChannelRegistration;
 import org.springframework.messaging.simp.config.MessageBrokerRegistry;
 import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.web.socket.config.annotation.*;
 import org.springframework.lang.NonNull;
 
+import com.manuelpedreira.shorturl.websocket.CookieWSHandshakeInterceptor;
+import com.manuelpedreira.shorturl.websocket.SubscriptionWSValidationInterceptor;
+
 @Configuration
 @EnableWebSocketMessageBroker
 @EnableScheduling
 public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
-  @Value("${cors.server}")
-  private String CORS_SERVER;
+
+  private final CookieWSHandshakeInterceptor cookieWSHandshakeInterceptor;
+  private final SubscriptionWSValidationInterceptor subscriptionWSValidationInterceptor;
+
+  public WebSocketConfig(CookieWSHandshakeInterceptor cookieWSHandshakeInterceptor,
+      SubscriptionWSValidationInterceptor subscriptionWSValidationInterceptor) {
+    this.cookieWSHandshakeInterceptor = cookieWSHandshakeInterceptor;
+    this.subscriptionWSValidationInterceptor = subscriptionWSValidationInterceptor;
+  }
 
   @Override
   public void configureMessageBroker(@NonNull MessageBrokerRegistry registry) {
@@ -23,7 +33,14 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
   @Override
   public void registerStompEndpoints(@NonNull StompEndpointRegistry registry) {
     registry.addEndpoint("/ws")
-        .setAllowedOriginPatterns(CORS_SERVER)
+        .addInterceptors(cookieWSHandshakeInterceptor)
+        .setAllowedOriginPatterns("*")
         .withSockJS();
   }
+
+  @Override
+  public void configureClientInboundChannel(@NonNull ChannelRegistration registration) {
+    registration.interceptors(subscriptionWSValidationInterceptor);
+  }
+
 }

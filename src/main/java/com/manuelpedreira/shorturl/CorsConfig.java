@@ -11,8 +11,15 @@ import java.util.List;
 
 @Configuration
 public class CorsConfig {
-  @Value("${cors.server}")
-  private String CORS_SERVER;
+
+  private final String CORS_SERVER;
+  private final String VALIDATION_PATTERN;
+
+  public CorsConfig(@Value("${cors.server}") String corsServer,
+      @Value("${custom.url.validation.pattern}") String pattern) {
+    CORS_SERVER = corsServer;
+    VALIDATION_PATTERN = pattern;
+  }
 
   @Bean
   public CorsFilter corsFilter() {
@@ -31,8 +38,7 @@ public class CorsConfig {
     publicAccess.setAllowCredentials(false);
 
     source.registerCorsConfiguration("/api/**", serverOnly);
-    source.registerCorsConfiguration("/ws/**", serverOnly);
-    source.registerCorsConfiguration("{shortCode:[a-zA-Z0-9]{7}}", publicAccess);
+    source.registerCorsConfiguration("{shortCode:" + VALIDATION_PATTERN + "}", publicAccess);
 
     return new CorsFilter(source);
   }

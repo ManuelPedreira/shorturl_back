@@ -1,5 +1,6 @@
 package com.manuelpedreira.shorturl;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
@@ -12,6 +13,12 @@ import com.manuelpedreira.shorturl.error.ProblemAuthenticationEntryPoint;
 
 @Configuration
 public class SecurityConfig {
+
+    private final String PATTERN;
+
+    public SecurityConfig(@Value("${custom.url.validation.pattern}") String pattern) {
+        PATTERN = pattern;
+    }
 
     @Bean
     public ProblemAuthenticationEntryPoint problemAuthenticationEntryPoint(ObjectMapper mapper) {
@@ -30,7 +37,7 @@ public class SecurityConfig {
         http
                 .csrf(csrf -> csrf.disable())
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers(HttpMethod.GET, "/{shortCode:[a-zA-Z0-9]{7}}").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/{shortCode:" + PATTERN + "}").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api").permitAll()
                         .requestMatchers(HttpMethod.GET, "/ws/**").permitAll()
                         .anyRequest().authenticated())
