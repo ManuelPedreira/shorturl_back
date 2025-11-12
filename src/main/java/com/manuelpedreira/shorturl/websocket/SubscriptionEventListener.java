@@ -4,6 +4,7 @@ import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.ApplicationListener;
 import org.springframework.lang.NonNull;
 import org.springframework.messaging.simp.SimpMessageHeaderAccessor;
@@ -17,14 +18,13 @@ public class SubscriptionEventListener implements ApplicationListener<SessionSub
 
   private final InMemoryMessageBuffer messageBuffer;
   private final SimpMessagingTemplate messagingTemplate;
-
-  // regex para parsear /topic/url.{code}
-  private final Pattern topicPattern = Pattern.compile("^/topic/url\\.([A-Za-z0-9_-]+)$");
+  private final Pattern topicPattern;
 
   public SubscriptionEventListener(InMemoryMessageBuffer messageBuffer,
-      SimpMessagingTemplate messagingTemplate) {
+      SimpMessagingTemplate messagingTemplate, @Value("${custom.url.validation.pattern}") String pattern) {
     this.messageBuffer = messageBuffer;
     this.messagingTemplate = messagingTemplate;
+    topicPattern = Pattern.compile("^/topic/url\\.(" + pattern + ")$");
   }
 
   @Override
@@ -45,7 +45,7 @@ public class SubscriptionEventListener implements ApplicationListener<SessionSub
       return;
 
     String shortCode = matcher.group(1);
-    var message = messageBuffer.getAndRemove(shortCode);
+    var message = messageBuffer.get(shortCode);
 
     if (message == null)
       return;

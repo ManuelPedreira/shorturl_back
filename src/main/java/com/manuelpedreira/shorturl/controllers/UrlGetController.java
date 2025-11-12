@@ -3,7 +3,9 @@ package com.manuelpedreira.shorturl.controllers;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.Optional;
+import java.util.regex.Pattern;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -27,16 +29,22 @@ public class UrlGetController {
   private final UrlService urlService;
   private final TelemetryService telemetryService;
   private final TelemetryBuilder telemetryBuilder;
+  private final Pattern validationPattern;
 
-  public UrlGetController(UrlService urlService, TelemetryService telemetryService, TelemetryBuilder telemetryBuilder) {
+  public UrlGetController(UrlService urlService, TelemetryService telemetryService, TelemetryBuilder telemetryBuilder,
+      @Value("${custom.url.validation.pattern}") String pattern) {
     this.urlService = urlService;
     this.telemetryService = telemetryService;
     this.telemetryBuilder = telemetryBuilder;
+    validationPattern = Pattern.compile(pattern);
+    ;
   }
 
-  @GetMapping("/{shortCode:[a-zA-Z0-9]{7}}")
-  // http://localhost:8080/abcd123
+  @GetMapping("/{shortCode}")
   public ModelAndView getURL(@PathVariable String shortCode, HttpServletRequest req, Model model) {
+
+    if (!validationPattern.matcher(shortCode).matches())
+      return new ModelAndView("error/404");
 
     Optional<Url> urlOptional = urlService.findByShortCode(shortCode);
 
