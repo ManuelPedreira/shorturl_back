@@ -8,11 +8,11 @@ COPY src ./src
 RUN mvn -B -DskipTests package
 
 # runtime stage
-FROM eclipse-temurin:21-jre-alpine
+FROM eclipse-temurin:21-jre-slim
 WORKDIR /app
 COPY --from=builder /app/target/*.jar app.jar
 
-ENV JAVA_OPTS=""
+ENV JAVA_OPTS="-Xms64m -Xmx128m -XX:MaxMetaspaceSize=64m -XX:+UseContainerSupport"
 ENV PORT=8080
 
 EXPOSE 8080
