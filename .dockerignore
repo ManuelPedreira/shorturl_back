@@ -1,0 +1,10 @@
+target/
+.git/
+.gitignore
+.mvn/
+*.iml
+*.log
+node_modules/
+.idea/
+.vscode/
+
