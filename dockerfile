@@ -10,6 +10,7 @@ RUN mvn -B -DskipTests package
 # runtime stage
 FROM eclipse-temurin:21-jre
 WORKDIR /app
+COPY --from=builder /app/target/*.jar app.jar
 
 ENV JAVA_TOOL_OPTIONS="-Xms128m -Xmx256m -XX:MaxMetaspaceSize=128m -XX:+UseSerialGC -XX:+UseStringDeduplication -XX:+ExitOnOutOfMemoryError -XX:+UseContainerSupport"
 ENV PORT=8080
