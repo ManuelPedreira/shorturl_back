@@ -33,6 +33,7 @@ build/
 ### VS Code ###
 .mvn/
 .vscode/
+layers/
 
 *.p12
 .env

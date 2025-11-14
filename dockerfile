@@ -20,10 +20,10 @@ FROM eclipse-temurin:21-jre-alpine
 WORKDIR /app
 
 # Copy each layer to maximize cache reuse and reduce rebuilds
-COPY --from=builder /app/dependencies/ ./dependencies/
-COPY --from=builder /app/snapshot-dependencies/ ./snapshot-dependencies/
-COPY --from=builder /app/spring-boot-loader/ ./spring-boot-loader/
-COPY --from=builder /app/application/ ./application/
+COPY --from=builder /app/dependencies/ ./
+COPY --from=builder /app/snapshot-dependencies/ ./
+COPY --from=builder /app/spring-boot-loader/ ./
+COPY --from=builder /app/application/ ./
 
 ENV JAVA_TOOL_OPTIONS="-XX:InitialRAMPercentage=15 -XX:MaxRAMPercentage=70 -XX:MaxMetaspaceSize=256m"
 ENV PORT=8080
