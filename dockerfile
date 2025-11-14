@@ -1,32 +1,19 @@
-# Build stage, using Alpine image to minimize layers
-FROM maven:3.9-eclipse-temurin-21 AS builder
-LABEL language="java"
-LABEL framework="spring-boot"
+# build stage
+FROM maven:3.9.4-eclipse-temurin-21 AS builder
+LABEL "language"="java"
+LABEL "framework"="spring-boot"
 WORKDIR /app
-
-# Copy only what is required for the build
 COPY pom.xml .
 COPY src ./src
-
-# Build the artifact skipping tests
 RUN mvn -B -DskipTests package
 
-# Extract jar layers to optimize Docker cache usage
-RUN java -Djarmode=layertools -jar target/*.jar extract && \
-    mkdir -p dependencies snapshot-dependencies spring-boot-loader application
-
-# Minimal runtime stage
+# runtime stage
 FROM eclipse-temurin:21-jre
 WORKDIR /app
+COPY --from=builder /app/target/*.jar app.jar
 
-# Copy each layer to maximize cache reuse and reduce rebuilds
-COPY --from=builder /app/dependencies/ ./
-COPY --from=builder /app/snapshot-dependencies/ ./
-COPY --from=builder /app/spring-boot-loader/ ./
-COPY --from=builder /app/application/ ./
-
-ENV JAVA_TOOL_OPTIONS="-Xms128m -Xmx256m -XX:MaxMetaspaceSize=128m -XX:+UseSerialGC -XX:+UseStringDeduplication -XX:+ExitOnOutOfMemoryError -XX:+UseContainerSupport"
+ENV JAVA_OPTS=""
 ENV PORT=8080
 
 EXPOSE 8080
-ENTRYPOINT ["java","org.springframework.boot.loader.launch.JarLauncher"]
+ENTRYPOINT ["sh","-c","java $JAVA_OPTS -jar /app/app.jar --server.port=${PORT}"]

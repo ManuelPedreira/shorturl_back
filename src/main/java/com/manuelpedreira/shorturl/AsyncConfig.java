@@ -34,9 +34,9 @@ public class AsyncConfig implements AsyncConfigurer {
   @Bean(name = "metadataExecutor")
   public Executor metadataExecutor() {
     ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
-    executor.setCorePoolSize(1);
-    executor.setMaxPoolSize(2);
-    executor.setQueueCapacity(25);
+    executor.setCorePoolSize(2);
+    executor.setMaxPoolSize(4);
+    executor.setQueueCapacity(50);
     executor.setThreadNamePrefix("Metadata-");
     executor.initialize();
     return executor;
