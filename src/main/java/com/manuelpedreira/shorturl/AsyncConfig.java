@@ -23,9 +23,9 @@ public class AsyncConfig implements AsyncConfigurer {
   @Bean(name = "telemetryExecutor")
   public Executor telemetryExecutor() {
     ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
-    executor.setCorePoolSize(10);
-    executor.setMaxPoolSize(50);
-    executor.setQueueCapacity(1000);
+    executor.setCorePoolSize(2);
+    executor.setMaxPoolSize(4);
+    executor.setQueueCapacity(200);
     executor.setThreadNamePrefix("Telemetry-");
     executor.initialize();
     return executor;
@@ -34,9 +34,9 @@ public class AsyncConfig implements AsyncConfigurer {
   @Bean(name = "metadataExecutor")
   public Executor metadataExecutor() {
     ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
-    executor.setCorePoolSize(3);
-    executor.setMaxPoolSize(10);
-    executor.setQueueCapacity(100);
+    executor.setCorePoolSize(1);
+    executor.setMaxPoolSize(2);
+    executor.setQueueCapacity(25);
     executor.setThreadNamePrefix("Metadata-");
     executor.initialize();
     return executor;

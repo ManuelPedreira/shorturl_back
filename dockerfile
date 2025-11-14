@@ -25,7 +25,7 @@ COPY --from=builder /app/snapshot-dependencies/ ./
 COPY --from=builder /app/spring-boot-loader/ ./
 COPY --from=builder /app/application/ ./
 
-ENV JAVA_TOOL_OPTIONS="-XX:InitialRAMPercentage=15 -XX:MaxRAMPercentage=70 -XX:MaxMetaspaceSize=256m"
+ENV JAVA_TOOL_OPTIONS="-Xms128m -Xmx256m -XX:MaxMetaspaceSize=128m -XX:+UseSerialGC -XX:+UseStringDeduplication -XX:+ExitOnOutOfMemoryError -XX:+UseContainerSupport"
 ENV PORT=8080
 
 EXPOSE 8080
