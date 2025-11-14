@@ -1,5 +1,5 @@
 # Build stage, using Alpine image to minimize layers
-FROM maven:3.9-eclipse-temurin-21-alpine AS builder
+FROM maven:3.9-eclipse-temurin-21 AS builder
 LABEL language="java"
 LABEL framework="spring-boot"
 WORKDIR /app
@@ -16,7 +16,7 @@ RUN java -Djarmode=layertools -jar target/*.jar extract && \
     mkdir -p dependencies snapshot-dependencies spring-boot-loader application
 
 # Minimal runtime stage
-FROM eclipse-temurin:21-jre-alpine
+FROM eclipse-temurin:21-jre
 WORKDIR /app
 
 # Copy each layer to maximize cache reuse and reduce rebuilds
