@@ -1,26 +1,36 @@
-# Short URL Service
+# ShortURL Backend
 
-#### Work in progress
+Spring service that creates 7-character short codes, issues 307 redirects, and streams scraped metadata over STOMP/SockJS, can surface bot-friendly previews while also logging telemetry for every redirected short URL.
 
-A simple URL shortener built with Spring Boot. It creates short codes for long URLs, redirects users to the original destination, generates bot-friendly previews using page metadata, and stores access telemetry.
+## Repositories
+- Frontend (`shorturl_front`): https://github.com/ManuelPedreira/shorturl_front
+- Backend (`shorturl_back`): https://github.com/ManuelPedreira/shorturl_back
 
-### Features
-- Shorten long URLs into 7‑char short codes
-- 307 redirect for users
-- Minimal HTML for bots (title, description, image)
-- Async metadata extraction from target pages
-- Safe URL validation to prevent SSRF
-- Telemetry collection (WIP)
-- User link management and telemetry (WIP)
+## System Overview
+- Frontend and backend run behind a shared Nginx reverse proxy that enforces rate limits and routes traffic to the proper upstream.
+- UI is a Next.js App Router project (`shorturl_front`).
+- Backend (`shorturl_back`) is a Spring service that exposes REST + STOMP endpoints.
+- Nginx (listening on `:80`) forwards:
+  - `/` and `/success` to the frontend.
+  - `/api`, `/ws`, and short-code slugs like `/abc1234` to the backend with WebSocket upgrade headers.
 
-## Quick Start
+## Features
+- Shorten long URLs into 7-char short codes with collision retries.
+- 307 redirects for users; bots get minimal HTML (`botPage.html`) with title/description/image.
+- Async metadata extraction with Jsoup, sanitization, and STOMP push so the frontend updates instantly.
+- Safe URL validator blocks SSRF attempts, loopback/private IPs, unexpected ports, and host callbacks.
+- Telemetry collection: async visit logging, link management and telemetry views planned.
+- WS pipeline: SockJS endpoint `/ws`, JWT-protected handshake (`WSAccess` cookie), per-topic authorization, and an in-memory buffer.
+- Problem Details errors plus custom access/entry handlers aligned with Spring Security; future user/link management hooks remain WIP.
+
+## Getting Started
 
 ```bash
 mvn spring-boot:run
+# http://localhost:8080
 ```
-Runs at `http://localhost:8080`.
 
-## API
+## REST API
 
 ### Create short URL
 ```http
@@ -31,7 +41,7 @@ Content-Type: application/json
   "url": "https://example.com/"
 }
 ```
-Response
+Response (201 + `Location`):
 ```json
 {
   "shortCode": "mjX3ndN",
@@ -44,25 +54,44 @@ Response
 ```http
 GET /mjX3ndN
 ```
-Behavior
-- Users: HTTP 307 Temporary Redirect to the original URL
-- Bots: minimal HTML with metadata for link previews
+- Humans: HTTP 307 redirect + async telemetry.
+- Bots (matches `custom.bot-agent`): `botPage.html` with stored metadata.
 
-Metadata extraction and telemetry are processed asynchronously.
+## WebSocket / STOMP
+- Endpoint: `GET /ws` (SockJS, upgrades when possible).
+- Topics: `/topic/url.{shortCode}` only. Messages carry `status = done|error` and expire after `custom.websocket.expirationTime.seconds`.
+- Security: `CookieWSHandshakeInterceptor` checks `WSAccess` JWT (`JWT_SECRET`), `SubscriptionWSValidationInterceptor` enforces topic/code match.
+- `SubscriptionEventListener` replays buffered payloads.
 
 ## Security
-- Public: `POST /api`, `GET /{shortCode:[a-zA-Z0-9]{7}}`
-- All other paths are protected
+- Spring Security permits `POST /api`, `GET /{shortCode}`, `GET /ws/**`; everything else stays authenticated-ready.
+- Safe URL validation, Problem Details responses, JWT-gated WebSocket access.
 
 ## Database
 - `urls`: short code, original URL, metadata, timestamps, optional owner
 - `telemetry`: visit logs (event time, IP, user agent, country)
 - `users` (WIP): accounts for link ownership/management
 
+## Environment Variables
+
+| Key | Default | Description |
+| --- | --- | --- |
+| `DB_URL`, `DB_USER`, `DB_PASS` | – | JDBC connection + credentials. |
+| `DB_C_DLL`, `DB_C_LOG` | `update`, `false` | Hibernate DDL + SQL logging. |
+| `DB_POOL_MAX`, `DB_POOL_MIN` | `5`, `1` | Hikari pool sizing. |
+| `CORS_ORIGIN` | `http://localhost:3000` | Allowed origin for `/api/**`. |
+| `PUBLIC_SERVER_HOST` | `http://localhost:8080` | Used to build `shortUrl` and prevent SSRF to self. |
+| `JWT_SECRET` | – | Secret for `WSAccess` JWT. |
+| `PORT` | `8080` | HTTP port. |
+
 ## Roadmap
 - Authentication, dashboards, and user panel
 - Telemetry reports and filters
 - Custom url codes
 
-## Tech
-Spring Boot 3, Spring Data JPA, Spring Security, Thymeleaf, PostgreSQL, Jsoup.
+## Tech Stack
+- **Framework**: Spring Boot 3.5 (Web, Security, Validation, WebSocket, Thymeleaf).
+- **Data**: Spring Data JPA + PostgreSQL.
+- **Realtime**: SockJS/STOMP, `SimpMessagingTemplate`, async executors.
+- **Security**: Spring Security, `io.jsonwebtoken`, Problem Details, CORS.
+- **Parsing**: Jsoup for metadata scraping and cleanup.
