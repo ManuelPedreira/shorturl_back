@@ -5,10 +5,17 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.UnknownHostException;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 @Component
 public class SafeUrlValidator {
+
+    private final String publicHost;
+
+    public SafeUrlValidator(@Value("${server.public.host}") String publicHost) {
+        this.publicHost = publicHost;
+    }
 
     public boolean isSafeUrl(String url) {
         try {
@@ -27,13 +34,14 @@ public class SafeUrlValidator {
             return false;
 
         String scheme = uri.getScheme();
-        if (scheme == null)
-            return false;
-        if (!scheme.equalsIgnoreCase("http") && !scheme.equalsIgnoreCase("https"))
+        if (scheme == null || !scheme.equalsIgnoreCase("http") && !scheme.equalsIgnoreCase("https"))
             return false;
 
         String host = uri.getHost();
         if (host == null)
+            return false;
+
+        if (publicHost != null && publicHost.contains(host)) // same host name
             return false;
 
         try {
