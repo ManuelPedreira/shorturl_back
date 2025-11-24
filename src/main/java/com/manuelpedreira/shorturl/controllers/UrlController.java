@@ -1,7 +1,6 @@
 package com.manuelpedreira.shorturl.controllers;
 
 import java.net.URI;
-import java.util.Objects;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;

@@ -5,7 +5,6 @@ import java.text.Normalizer;
 import java.time.Instant;
 
 import org.jsoup.Jsoup;
-import org.jsoup.Connection.Response;
 import org.jsoup.nodes.Document;
 import org.jsoup.safety.Safelist;
 import org.slf4j.Logger;
@@ -27,7 +26,6 @@ public class MetadataExtractorService {
 
   private static final Logger logger = LoggerFactory.getLogger(MetadataExtractorService.class);
 
-  private final int maxRedirections;
   private final int ttlSeconds;
 
   private final UrlRepository urlRepository;
@@ -37,14 +35,12 @@ public class MetadataExtractorService {
 
   public MetadataExtractorService(UrlRepository urlRepository, SafeUrlValidator safeUrlValidator,
       SimpMessagingTemplate messagingTemplate, InMemoryMessageBuffer messageBuffer,
-      @Value("${custom.url.fetch.max_redirections}") int maxRedirections,
       @Value("${custom.websocket.expirationTime.seconds}") int ttlSeconds) {
 
     this.urlRepository = urlRepository;
     this.safeUrlValidator = safeUrlValidator;
     this.messagingTemplate = messagingTemplate;
     this.messageBuffer = messageBuffer;
-    this.maxRedirections = maxRedirections;
     this.ttlSeconds = ttlSeconds;
   }
 
@@ -88,7 +84,11 @@ public class MetadataExtractorService {
 
   public Url enrichUrlWithMetaDataJsoup(Url url) throws IOException {
 
-    Document doc = resolveRedirects(url.getOriginalUrl(), maxRedirections);
+    Document doc = Jsoup.connect(url.getOriginalUrl())
+        .userAgent("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36")
+        .timeout(5000)
+        .ignoreContentType(true)
+        .get();
 
     url.setTitle(doc.title());
     if (url.getTitle().isEmpty())
@@ -105,7 +105,20 @@ public class MetadataExtractorService {
         "meta[property=og:image]",
         "meta[property=og:image:url]",
         "meta[name=twitter:image]",
-        "meta[name=image]"));
+        "meta[name=image]",
+        "link[rel*=icon]"));
+
+    if (url.getImageUrl().isEmpty()) {
+      var img = doc.selectFirst("header img[src], nav img[src], .hero img[src], .header img[src]");
+      if (img != null) {
+        url.setImageUrl(img.attr("src"));
+      } else {
+        img = doc.selectFirst("img[src]:not([src*=logo]):not([src*=icon])");
+        if (img != null) {
+          url.setImageUrl(img.attr("src"));
+        }
+      }
+    }
 
     url.setTitle(sanitizeText(url.getTitle(), 200));
     url.setDescription(sanitizeText(url.getDescription(), 1000));
@@ -114,24 +127,6 @@ public class MetadataExtractorService {
       url.setImageUrl("");
 
     return url;
-  }
-
-  private Document resolveRedirects(String url, int maxRedirections) throws IOException {
-
-    if (!safeUrlValidator.isSafeUrl(url))
-      throw new IOException("URL Redirection failed");
-
-    Response response = Jsoup.connect(url)
-        .timeout(5000)
-        .followRedirects(false)
-        .execute();
-
-    if (maxRedirections == 0 ||
-        response.statusCode() < 300 || response.statusCode() >= 400 ||
-        response.header("Location") == null)
-      return response.parse();
-
-    return resolveRedirects(response.header("Location"), maxRedirections - 1);
   }
 
   private String getFirstJsoupSelect(Document doc, String... metas) {
@@ -160,5 +155,4 @@ public class MetadataExtractorService {
     }
     return cleaned;
   }
-
 }
