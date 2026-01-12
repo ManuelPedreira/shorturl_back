@@ -105,8 +105,7 @@ public class MetadataExtractorService {
         "meta[property=og:image]",
         "meta[property=og:image:url]",
         "meta[name=twitter:image]",
-        "meta[name=image]",
-        "link[rel*=icon]"));
+        "meta[name=image]"));
 
     if (url.getImageUrl().isEmpty()) {
       var img = doc.selectFirst("header img[src], nav img[src], .hero img[src], .header img[src]");
